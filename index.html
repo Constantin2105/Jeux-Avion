@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:;"
+    />
+    <title>Sky Strike</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Orbitron:wght@700;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <canvas id="game"></canvas>
+
+    <!-- MENU PRINCIPAL -->
+    <section id="menu" class="screen">
+      <div class="menu-wrap">
+        <div class="logo">
+          <span class="logo-top">OPÉRATION</span>
+          <h1>SKY STRIKE</h1>
+          <span class="logo-sub">Combat aérien · 20 missions</span>
+        </div>
+        <nav class="menu-buttons">
+          <button id="menu-continue" class="primary" data-action="campaign">NOUVELLE CAMPAGNE</button>
+          <button data-action="controls">COMMANDES</button>
+          <button data-action="options">OPTIONS</button>
+          <button data-action="quit">QUITTER</button>
+        </nav>
+        <p class="hint">Souris : piloter · Clic gauche : canon · Clic droit : bombes &amp; missiles · Molette : changer d'arme</p>
+      </div>
+    </section>
+
+    <!-- HANGAR -->
+    <section id="hangar" class="screen">
+      <header class="hangar-top">
+        <h2>HANGAR</h2>
+        <div class="wallet">
+          <span>Crédits</span><b id="hangar-credits">0 ¢</b>
+          <span>Score total</span><b id="hangar-score">0</b>
+        </div>
+        <div class="top-actions">
+          <button data-action="controls">Commandes</button>
+          <button data-action="options">Options</button>
+          <button data-action="menu">Menu</button>
+        </div>
+      </header>
+      <div class="hangar-grid">
+        <div class="col col-plane">
+          <h3>Rafale « Sky Strike »</h3>
+          <canvas id="plane-preview" width="360" height="300"></canvas>
+          <div id="plane-stats"></div>
+          <h3>Arsenal</h3>
+          <div id="arsenal"></div>
+        </div>
+        <div class="col col-upgrades">
+          <h3>Améliorations</h3>
+          <div id="upgrades"></div>
+        </div>
+        <div class="col col-missions">
+          <div class="tabs">
+            <button id="tab-missions" data-action="tab-missions" class="active">Missions</button>
+            <button id="tab-intel" data-action="tab-intel">Renseignement</button>
+          </div>
+          <div id="missions-pane">
+            <div id="level-grid"></div>
+            <div id="mission-info"></div>
+            <button class="primary takeoff" data-action="takeoff">DÉCOLLER ✈</button>
+          </div>
+          <div id="intel-pane" style="display: none"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PAUSE -->
+    <section id="pause" class="screen modal">
+      <div class="box">
+        <h2>PAUSE</h2>
+        <p id="pause-info"></p>
+        <button class="primary" data-action="resume">REPRENDRE</button>
+        <button data-action="controls">COMMANDES</button>
+        <button data-action="options">OPTIONS</button>
+        <button data-action="abort">ABANDONNER LA MISSION</button>
+      </div>
+    </section>
+
+    <!-- RÉSULTATS -->
+    <section id="results" class="screen modal">
+      <div class="box wide">
+        <h2 id="results-title" class="ok">MISSION ACCOMPLIE</h2>
+        <p id="results-sub"></p>
+        <div id="results-stats" class="stats"></div>
+        <div class="row">
+          <button data-action="hangar">HANGAR</button>
+          <button class="primary" data-action="next">MISSION SUIVANTE ➜</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- GAME OVER -->
+    <section id="gameover" class="screen modal">
+      <div class="box wide">
+        <h2 class="ko">AVION ABATTU</h2>
+        <p>Votre appareil a été détruit.</p>
+        <div id="gameover-stats" class="stats"></div>
+        <div class="row">
+          <button data-action="hangar">HANGAR</button>
+          <button class="primary" data-action="retry">RÉESSAYER</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- VICTOIRE -->
+    <section id="victory" class="screen modal">
+      <div class="box wide">
+        <h2 class="ok">VICTOIRE !</h2>
+        <p>Le prototype Oméga est détruit. La guerre est terminée. Vous êtes un héros, pilote.</p>
+        <div id="victory-stats" class="stats"></div>
+        <div class="row">
+          <button data-action="hangar">HANGAR</button>
+          <button class="primary" data-action="menu">MENU PRINCIPAL</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- COMMANDES -->
+    <section id="controls" class="screen modal">
+      <div class="box wide">
+        <h2>COMMANDES</h2>
+        <div class="keys">
+          <div><kbd>Souris</kbd><span>Piloter l'avion (il suit le pointeur)</span></div>
+          <div><kbd>Clic gauche</kbd><span>Canon principal (maintenir). Attention à la surchauffe !</span></div>
+          <div><kbd>Clic droit</kbd><span>Larguer la bombe / tirer le missile sélectionné</span></div>
+          <div><kbd>Molette</kbd><span>Changer d'arme secondaire</span></div>
+          <div><kbd>1 … 8</kbd><span>Sélection directe d'une arme</span></div>
+          <div><kbd>Échap / P</kbd><span>Pause</span></div>
+          <div><kbd>F11</kbd><span>Plein écran</span></div>
+        </div>
+        <div class="tips">
+          <p><b>Le canon</b> est redoutable contre les avions et les missiles, mais 4× moins efficace contre les blindés au sol.</p>
+          <p><b>Les bombes</b> détruisent les cibles au sol : chars, lance-missiles, DCA, navires, bunkers. Un réticule montre le point d'impact.</p>
+          <p><b>Les missiles ennemis</b> ont chacun leur effet : incendie, brouillage IEM, fragmentation, hypersonique… Consultez l'onglet <i>Renseignement</i> du hangar.</p>
+          <p><b>Abattez les radars</b> : tant qu'ils sont actifs, les missiles ennemis sont plus agiles.</p>
+        </div>
+        <button class="primary" data-action="back">RETOUR</button>
+      </div>
+    </section>
+
+    <!-- OPTIONS -->
+    <section id="options" class="screen modal">
+      <div class="box">
+        <h2>OPTIONS</h2>
+        <label class="slider">Volume général <input id="opt-volume" type="range" min="0" max="1" step="0.05" /></label>
+        <label class="slider">Musique <input id="opt-music" type="range" min="0" max="1" step="0.05" /></label>
+        <button data-action="fullscreen">PLEIN ÉCRAN (F11)</button>
+        <button class="danger" data-action="reset">EFFACER LA PROGRESSION</button>
+        <button class="primary" data-action="back">RETOUR</button>
+      </div>
+    </section>
+
+    <script src="src/util.js"></script>
+    <script src="src/audio.js"></script>
+    <script src="src/data.js"></script>
+    <script src="src/sprites.js"></script>
+    <script src="src/terrain.js"></script>
+    <script src="src/fx.js"></script>
+    <script src="src/entities.js"></script>
+    <script src="src/bosses.js"></script>
+    <script src="src/player.js"></script>
+    <script src="src/hud.js"></script>
+    <script src="src/game.js"></script>
+    <script src="src/ui.js"></script>
+    <script src="src/main.js"></script>
+  </body>
+</html>

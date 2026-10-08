@@ -1,0 +1,58 @@
+{
+  "name": "jeux-avion",
+  "productName": "Sky Strike",
+  "version": "1.0.0",
+  "description": "Sky Strike - jeu de combat aérien en Electron : abattez les missiles, bombardez les cibles au sol, 20 niveaux.",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder",
+    "dist:win": "electron-builder --win",
+    "dist:linux": "electron-builder --linux",
+    "dist:mac": "electron-builder --mac"
+  },
+  "author": "constantin2105",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^44.7.0",
+    "electron-builder": "^26.15.3"
+  },
+  "build": {
+    "appId": "com.constantin2105.skystrike",
+    "productName": "Sky Strike",
+    "files": [
+      "main.js",
+      "preload.js",
+      "index.html",
+      "styles.css",
+      "src/**/*"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "signAndEditExecutable": false
+    },
+    "linux": {
+      "target": "AppImage"
+    },
+    "mac": {
+      "target": "dmg"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "Sky Strike",
+      "artifactName": "SkyStrike-Setup-${version}.exe"
+    },
+    "directories": {
+      "output": "dist"
+    }
+  }
+}
