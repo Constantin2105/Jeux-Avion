@@ -554,7 +554,7 @@ function introShots() {
       const thr = t > 1.6 ? 1 : 0.3;
       for (const ex of [-4.6, 4.6]) {
         const f = (30 + thr * 40) * (0.85 + Math.random() * 0.3);
-        ctx.drawImage(Glow.get(255, 150, 60), x + ex * sc - f, y + 52 * sc - f * 0.5, f * 2, f * 2.6);
+        ctx.drawImage(Glow.get(...PlayerLook.flame), x + ex * sc - f, y + 52 * sc - f * 0.5, f * 2, f * 2.6);
         ctx.drawImage(Glow.get(140, 180, 255), x + ex * sc - 10, y + 50 * sc, 20, 40 * thr + 10);
       }
       ctx.globalCompositeOperation = 'source-over';
@@ -601,7 +601,7 @@ function introShots() {
       ctx.globalCompositeOperation = 'lighter';
       for (const ex of [-4.6, 4.6]) {
         const f = 56 * (0.85 + Math.random() * 0.3);
-        ctx.drawImage(Glow.get(255, 150, 60), x + ex * 2.2 - f, y + 52 * 2.2 - f * 0.5, f * 2, f * 2.6);
+        ctx.drawImage(Glow.get(...PlayerLook.flame), x + ex * 2.2 - f, y + 52 * 2.2 - f * 0.5, f * 2, f * 2.6);
       }
       ctx.globalCompositeOperation = 'source-over';
       Sprites.draw(ctx, spr, x, y, bank * 0.08, 2.2, 1, 1 - Math.abs(bank) * 0.28);
@@ -719,7 +719,7 @@ function victoryShots() {
       for (const [ox, oy, s] of form) {
         ctx.globalCompositeOperation = 'lighter';
         const f = 26 * s * (0.85 + Math.random() * 0.3);
-        ctx.drawImage(Glow.get(255, 150, 60), bx + ox - f, by + oy + 52 * s - f * 0.4, f * 2, f * 2.4);
+        ctx.drawImage(Glow.get(...PlayerLook.flame), bx + ox - f, by + oy + 52 * s - f * 0.4, f * 2, f * 2.4);
         ctx.globalCompositeOperation = 'source-over';
         Sprites.draw(ctx, spr, bx + ox, by + oy, 0, s);
       }

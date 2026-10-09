@@ -63,6 +63,7 @@ const UI = {
 
   init() {
     this.save = Save.load();
+    Sprites.applyPlayerLook(this.save.upgrades);
     SFX.setVolume(this.save.settings.volume);
     SFX.setMusicVolume(this.save.settings.music);
     this.selectedLevel = Math.min(this.save.unlocked, LEVELS.length);
@@ -185,6 +186,7 @@ const UI = {
   // --- Partie ---------------------------------------------------------------
   startLevel(n) {
     if (Cinema.active) Cinema.active = false;
+    Sprites.applyPlayerLook(this.save.upgrades);
     this.endGame();
     this.selectedLevel = n;
     Input.release();
@@ -291,10 +293,28 @@ const UI = {
       return;
     }
     this.save.credits -= cost;
+    const before = playerLookFrom(this.save.upgrades).tier;
     this.save.upgrades[key]++;
+    const look = Sprites.applyPlayerLook(this.save.upgrades);
+    // animation de l'aperçu + annonce de nouvelle livrée
+    const pv = $('#plane-preview');
+    pv.classList.remove('upgraded');
+    void pv.offsetWidth;
+    pv.classList.add('upgraded');
+    if (look.tier > before) this.toast(`NOUVELLE LIVRÉE : ${look.livery.name.toUpperCase()}`, look.livery.accent || '#ffffff');
     Save.write(this.save);
     SFX.play('buy');
     this.renderHangar();
+  },
+
+  toast(text, color) {
+    const t = document.createElement('div');
+    t.className = 'toast';
+    t.textContent = text;
+    t.style.borderColor = color;
+    t.style.color = color;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 2600);
   },
 
   renderHangar() {
@@ -303,6 +323,12 @@ const UI = {
     $('#hangar-score').textContent = U.fmt(s.totalScore);
 
     // aperçu de l'avion
+    const look = playerLookFrom(s.upgrades);
+    const nextTier = LIVERIES[look.tier + 1];
+    const needed = nextTier ? LIVERY_AT[look.tier + 1] - upgradeCount(s.upgrades) : 0;
+    $('#livery').innerHTML = `<span>Livrée</span><b style="color:${look.livery.accent || '#dbe8f4'}">${look.livery.name}</b>${
+      nextTier ? `<small>Prochaine : ${nextTier.name} (encore ${needed} amélioration${needed > 1 ? 's' : ''})</small>` : '<small>Livrée ultime atteinte</small>'
+    }<div class="tiers">${LIVERIES.map((l, i) => `<i class="${i <= look.tier ? 'on' : ''}" style="--c:${l.accent || '#9aa8b6'}"></i>`).join('')}</div>`;
     const pv = $('#plane-preview');
     if (!pv.dataset.ready) {
       pv.dataset.ready = '1';

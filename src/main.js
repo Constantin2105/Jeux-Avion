@@ -108,7 +108,7 @@ const MenuScene = {
     ctx.globalCompositeOperation = 'lighter';
     for (const ex of [-4.6, 4.6]) {
       const f = 34 * (0.85 + Math.random() * 0.3);
-      ctx.drawImage(Glow.get(255, 150, 60), x + ex * 1.6 * sx - f, y + 84 - f * 0.5, f * 2, f * 2.4);
+      ctx.drawImage(Glow.get(...PlayerLook.flame), x + ex * 1.6 * sx - f, y + 84 - f * 0.5, f * 2, f * 2.4);
     }
     ctx.globalCompositeOperation = 'source-over';
     Sprites.draw(ctx, spr, x, y, 0, 1.6, 1, sx);

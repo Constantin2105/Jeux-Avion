@@ -249,55 +249,73 @@ function camoBlotches(ctx, clipFn, colors, seed, count, size) {
 
 // ---- avions -----------------------------------------------------------------
 
-function drawPlayerJet(ctx) {
-  const base = '#8d9aa8';
-  // --- ailes delta ---
-  const wing = [
-    [9, -8],
-    [22, 4],
-    [46, 26],
-    [46, 33],
-    [38, 35],
-    [9, 35],
-  ];
-  const wingPath = () => {
-    poly(ctx, wing);
+// Livrées du joueur : elles évoluent avec le niveau global d'amélioration
+const LIVERIES = [
+  { name: 'Standard', base: '#8d9aa8', camo: ['rgba(70,82,96,0.45)', 'rgba(120,132,146,0.35)'], accent: null, edge: 'rgba(255,255,255,0.35)', neon: null },
+  { name: 'Escadron', base: '#86939f', camo: ['rgba(80,92,104,0.35)', 'rgba(140,150,160,0.3)'], accent: '#ffb000', edge: 'rgba(255,255,255,0.4)', neon: null },
+  { name: 'Tempête', base: '#4c5f75', camo: ['rgba(30,42,58,0.55)', 'rgba(110,130,152,0.35)'], accent: '#4fd8ff', edge: 'rgba(180,240,255,0.55)', neon: null },
+  { name: 'Éclipse', base: '#2b2e35', camo: ['rgba(10,10,14,0.5)', 'rgba(70,74,84,0.4)'], accent: '#e8b923', edge: 'rgba(255,220,120,0.8)', neon: null },
+  { name: 'Légende', base: '#dfe3ea', camo: null, accent: '#ff2d55', edge: 'rgba(255,255,255,0.9)', neon: '#5ff0ff' },
+];
+
+// Couleurs de flamme selon le niveau du réacteur
+const ENGINE_FLAMES = [
+  [255, 150, 60],
+  [255, 165, 70],
+  [255, 200, 110],
+  [120, 170, 255],
+  [80, 220, 255],
+  [190, 110, 255],
+];
+
+// Calcule l'apparence de l'avion à partir des améliorations achetées
+// nombre total d'améliorations requis pour chaque livrée
+const LIVERY_AT = [0, 5, 12, 20, 30];
+
+function upgradeCount(up) {
+  let sum = 0;
+  for (const k of Object.keys(UPGRADES)) sum += up[k] || 0;
+  return sum;
+}
+
+function playerLookFrom(up) {
+  const sum = upgradeCount(up);
+  let tier = 0;
+  for (let i = 0; i < LIVERY_AT.length; i++) if (sum >= LIVERY_AT[i]) tier = i;
+  return {
+    tier,
+    livery: LIVERIES[tier],
+    gun: up.gun || 0,
+    armor: up.armor || 0,
+    shield: up.shield || 0,
+    cooling: up.cooling || 0,
+    engine: up.engine || 0,
+    bay: up.bay || 0,
+    magnet: up.magnet || 0,
   };
-  for (const m of [false, true]) {
-    ctx.save();
-    if (m) ctx.scale(-1, 1);
-    wingPath();
-    ctx.fillStyle = vGrad(ctx, -8, 35, [
-      [0, shade(base, 0.2)],
-      [1, shade(base, -0.15)],
-    ]);
-    ctx.fill();
-    camoBlotches(ctx, wingPath, ['rgba(70,82,96,0.45)', 'rgba(120,132,146,0.35)'], m ? 11 : 7, 10, 40);
-    ctx.lineWidth = 0.6;
-    ctx.strokeStyle = 'rgba(30,35,42,0.85)';
-    wingPath();
-    ctx.stroke();
-    // bord d'attaque clair
+}
+
+const PlayerLook = { flame: ENGINE_FLAMES[0], flameSize: 1, look: null };
+
+function glowLine(ctx, pts, color, w) {
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 3;
+  ctx.lineWidth = w;
+  ctx.beginPath();
+  pts.forEach((p, i) => (i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])));
+  ctx.stroke();
+  ctx.restore();
+}
+
+function underwingStore(ctx, x, y, kind) {
+  ctx.fillStyle = '#5a6470';
+  ctx.fillRect(x - 0.9, y - 5, 1.8, 10);
+  if (kind === 'tank') {
     ctx.beginPath();
-    ctx.moveTo(10, -7);
-    ctx.lineTo(45.5, 26.5);
-    ctx.strokeStyle = 'rgba(255,255,255,0.35)';
-    ctx.lineWidth = 0.9;
-    ctx.stroke();
-    // volets / élevons
-    panelLines(ctx, [
-      [14, 31, 44, 31],
-      [27, 31, 27, 35],
-      [37, 31, 37, 35],
-      [18, 6, 18, 31],
-      [30, 18, 30, 31],
-    ]);
-    // pylônes + réservoir
-    ctx.fillStyle = '#5a6470';
-    ctx.fillRect(20.5, 12, 1.8, 10);
-    ctx.beginPath();
-    ctx.ellipse(21.4, 17, 3.1, 11, 0, 0, TAU);
-    ctx.fillStyle = hGrad(ctx, 18, 25, [
+    ctx.ellipse(x, y, 3.1, 11, 0, 0, TAU);
+    ctx.fillStyle = hGrad(ctx, x - 3, x + 3, [
       [0, '#6c7682'],
       [0.35, '#c9d0d8'],
       [1, '#59626d'],
@@ -306,48 +324,167 @@ function drawPlayerJet(ctx) {
     ctx.strokeStyle = 'rgba(0,0,0,0.45)';
     ctx.lineWidth = 0.4;
     ctx.stroke();
-    // bombe sous l'aile
+  } else {
     ctx.beginPath();
-    ctx.ellipse(32, 22, 2.4, 7.5, 0, 0, TAU);
-    ctx.fillStyle = hGrad(ctx, 29.6, 34.4, [
+    ctx.ellipse(x, y, 2.3, 7.2, 0, 0, TAU);
+    ctx.fillStyle = hGrad(ctx, x - 2.3, x + 2.3, [
       [0, '#4e5636'],
       [0.4, '#8a935f'],
       [1, '#3d4429'],
     ]);
     ctx.fill();
     ctx.fillStyle = '#e3c341';
-    ctx.fillRect(29.8, 16.5, 4.4, 0.9);
+    ctx.fillRect(x - 2.1, y - 5.5, 4.2, 0.9);
+  }
+}
+
+function drawPlayerJet(ctx, L = playerLookFrom({})) {
+  const lv = L.livery;
+  const base = lv.base;
+  const T = L.tier;
+  const span = 46 + (T >= 2 ? 3 : 0) + (T >= 4 ? 2 : 0);
+  const fins = T >= 3 ? 2 : 1;
+  // --- ailes delta ---
+  const wing = [
+    [9, -8],
+    [22, 4],
+    [span, 26],
+    [span, 33],
+    [span - 8, 35],
+    [9, 35],
+  ];
+  const wingPath = () => poly(ctx, wing);
+  for (const m of [false, true]) {
+    ctx.save();
+    if (m) ctx.scale(-1, 1);
+    // extension d'emplanture (LERX) pour les livrées avancées
+    if (T >= 4) {
+      poly(ctx, [
+        [8, -30],
+        [14, -14],
+        [10, -6],
+      ]);
+      ctx.fillStyle = shade(base, -0.1);
+      ctx.fill();
+    }
+    wingPath();
+    ctx.fillStyle = vGrad(ctx, -8, 35, [
+      [0, shade(base, 0.2)],
+      [1, shade(base, -0.15)],
+    ]);
+    ctx.fill();
+    if (lv.camo) camoBlotches(ctx, wingPath, lv.camo, m ? 11 : 7, T === 2 ? 14 : 10, 40);
+    if (T === 2) {
+      // motif « éclaté » anguleux
+      ctx.save();
+      wingPath();
+      ctx.clip();
+      ctx.fillStyle = 'rgba(20,30,44,0.45)';
+      poly(ctx, [
+        [14, 6],
+        [30, 14],
+        [24, 30],
+        [12, 26],
+      ]);
+      ctx.fill();
+      ctx.restore();
+    }
+    ctx.lineWidth = 0.6;
+    ctx.strokeStyle = 'rgba(30,35,42,0.85)';
+    wingPath();
+    ctx.stroke();
+    // bord d'attaque
+    ctx.beginPath();
+    ctx.moveTo(10, -7);
+    ctx.lineTo(span - 0.5, 26.5);
+    ctx.strokeStyle = lv.edge;
+    ctx.lineWidth = T >= 3 ? 1.3 : 0.9;
+    ctx.stroke();
+    // bandes de couleur d'escadron en bout d'aile
+    if (lv.accent) {
+      ctx.save();
+      wingPath();
+      ctx.clip();
+      ctx.fillStyle = lv.accent;
+      ctx.globalAlpha = 0.9;
+      ctx.fillRect(span - 9, 18, 2.2, 20);
+      if (T >= 2) ctx.fillRect(span - 13, 22, 1.2, 16);
+      ctx.restore();
+    }
+    // néons de la livrée « Légende »
+    if (lv.neon) glowLine(ctx, [[12, -2], [span - 4, 27]], lv.neon, 0.7);
+    // volets / élevons
+    panelLines(ctx, [
+      [14, 31, span - 2, 31],
+      [27, 31, 27, 35],
+      [37, 31, 37, 35],
+      [18, 6, 18, 31],
+      [30, 18, 30, 31],
+    ]);
+    // plaques de blindage (une par niveau de blindage, max 3 par aile)
+    for (let i = 0; i < Math.min(3, Math.ceil(L.armor / 2)); i++) {
+      const px = 12 + i * 5;
+      ctx.fillStyle = shade(base, -0.35);
+      ctx.fillRect(px, 8 + i * 4, 4, 9);
+      ctx.strokeStyle = L.armor >= 5 && lv.accent ? lv.accent : 'rgba(0,0,0,0.5)';
+      ctx.lineWidth = 0.4;
+      ctx.strokeRect(px, 8 + i * 4, 4, 9);
+      ctx.fillStyle = 'rgba(255,255,255,0.4)';
+      ctx.fillRect(px + 0.6, 8.6 + i * 4, 0.6, 0.6);
+      ctx.fillRect(px + 2.8, 8.6 + i * 4, 0.6, 0.6);
+    }
+    // emports sous les ailes : la soute ajoute des bombes
+    underwingStore(ctx, 21.4, 17, 'tank');
+    const bombs = 1 + Math.min(2, Math.floor(L.bay / 2));
+    for (let i = 0; i < bombs; i++) underwingStore(ctx, 29 + i * 5, 20 + i * 2.5, 'bomb');
+    // armes de voilure selon le canon
+    if (L.gun >= 5) {
+      // nacelles de canon lourd / laser / plasma
+      const col = L.gun >= 7 ? '#b46bff' : L.gun >= 6 ? '#4fd8ff' : '#3a3f45';
+      ctx.fillStyle = '#2e3238';
+      ctx.fillRect(15.5, -4, 3, 14);
+      ctx.beginPath();
+      ctx.arc(17, -4, 1.9, 0, TAU);
+      ctx.fillStyle = col;
+      ctx.fill();
+      if (L.gun >= 6) glowLine(ctx, [[17, -3], [17, 8]], col, 0.8);
+    }
     // missile en bout d'aile
     ctx.beginPath();
-    ctx.ellipse(46, 18, 1.6, 12, 0, 0, TAU);
-    ctx.fillStyle = hGrad(ctx, 44.4, 47.6, [
+    ctx.ellipse(span, 18, 1.6, 12, 0, 0, TAU);
+    ctx.fillStyle = hGrad(ctx, span - 1.6, span + 1.6, [
       [0, '#9da3a8'],
       [0.4, '#f4f6f8'],
       [1, '#8a9096'],
     ]);
     ctx.fill();
     ctx.fillStyle = '#c73a2f';
-    ctx.fillRect(44.5, 7.5, 3, 1.4);
-    ctx.fillStyle = '#4a4e52';
-    poly(ctx, [
-      [44.4, 26],
-      [42.4, 30],
-      [44.6, 29.5],
-    ]);
-    ctx.fill();
-    // cocarde
-    roundel(ctx, 32, 28.5, 3.6, ['#1f3f9a', '#f2f2f2', '#d0252f']);
+    ctx.fillRect(span - 1.5, 7.5, 3, 1.4);
+    // émetteurs de bouclier
+    if (L.shield >= 3) {
+      ctx.beginPath();
+      ctx.arc(span, 33, 1.8, 0, TAU);
+      ctx.fillStyle = '#7ff0ff';
+      ctx.shadowColor = '#4fd8ff';
+      ctx.shadowBlur = 4;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    }
+    // cocarde (basse visibilité pour la livrée Éclipse)
+    if (T === 3) roundel(ctx, 32, 28.5, 3.6, ['#6a6f78', '#2b2e35', '#6a6f78']);
+    else roundel(ctx, 32, 28.5, 3.6, ['#1f3f9a', '#f2f2f2', '#d0252f']);
     ctx.restore();
   }
 
   // --- canards ---
+  const cn = T >= 4 ? 3 : 0;
   for (const m of [false, true]) {
     ctx.save();
     if (m) ctx.scale(-1, 1);
     poly(ctx, [
       [7.5, -27],
-      [19, -17.5],
-      [19, -14.5],
+      [19 + cn, -17.5],
+      [19 + cn, -14.5],
       [8.5, -15],
     ]);
     ctx.fillStyle = vGrad(ctx, -27, -14, [
@@ -358,6 +495,10 @@ function drawPlayerJet(ctx) {
     ctx.strokeStyle = 'rgba(30,35,42,0.8)';
     ctx.lineWidth = 0.5;
     ctx.stroke();
+    if (lv.accent && T >= 2) {
+      ctx.fillStyle = lv.accent;
+      ctx.fillRect(16 + cn, -17.4, 2.5, 2.8);
+    }
     // entrées d'air
     poly(ctx, [
       [8.5, -14],
@@ -389,25 +530,29 @@ function drawPlayerJet(ctx) {
   sym(ctx, fus);
   ctx.fillStyle = cylinder(ctx, 10.5, base);
   ctx.fill();
-  camoBlotches(ctx, () => sym(ctx, fus), ['rgba(70,82,96,0.4)', 'rgba(130,142,156,0.35)'], 3, 9, 50);
-  // reflet longitudinal
+  if (lv.camo) camoBlotches(ctx, () => sym(ctx, fus), lv.camo, 3, 9, 50);
   ctx.save();
   sym(ctx, fus);
   ctx.clip();
-  ctx.fillStyle = 'rgba(255,255,255,0.18)';
+  // reflet longitudinal
+  ctx.fillStyle = T >= 3 ? 'rgba(255,255,255,0.28)' : 'rgba(255,255,255,0.18)';
   ctx.fillRect(-4.5, -50, 2.4, 98);
+  // bande d'escadron sur le dos
+  if (lv.accent) {
+    ctx.fillStyle = lv.accent;
+    ctx.globalAlpha = 0.85;
+    ctx.fillRect(-10.5, 4, 21, 2.2);
+    if (T >= 3) ctx.fillRect(-10.5, 7.5, 21, 0.9);
+    ctx.globalAlpha = 1;
+  }
+  // radôme
+  ctx.fillStyle = T === 4 ? 'rgba(255,45,85,0.75)' : 'rgba(40,46,54,0.55)';
+  ctx.fillRect(-10, -60, 20, 13);
   ctx.restore();
   sym(ctx, fus);
   ctx.lineWidth = 0.6;
   ctx.strokeStyle = 'rgba(25,30,36,0.9)';
   ctx.stroke();
-  // radôme
-  ctx.save();
-  sym(ctx, fus);
-  ctx.clip();
-  ctx.fillStyle = 'rgba(40,46,54,0.55)';
-  ctx.fillRect(-10, -60, 20, 13);
-  ctx.restore();
   // perche de ravitaillement
   ctx.strokeStyle = '#3a3f45';
   ctx.lineWidth = 0.9;
@@ -415,7 +560,6 @@ function drawPlayerJet(ctx) {
   ctx.moveTo(4.2, -40);
   ctx.lineTo(5, -50);
   ctx.stroke();
-
   panelLines(ctx, [
     [-6.6, -34, 6.6, -34],
     [-9, -8, 9, -8],
@@ -424,36 +568,108 @@ function drawPlayerJet(ctx) {
     [-3, -20, -3, 44],
     [3, -20, 3, 44],
   ]);
-
-  // dérive (vue de dessus)
-  poly(ctx, [
-    [-1.4, 12],
-    [1.4, 12],
-    [1.2, 50],
-    [-1.2, 50],
-  ]);
-  ctx.fillStyle = hGrad(ctx, -1.4, 1.4, [
-    [0, '#c5ced8'],
-    [1, '#4e5864'],
-  ]);
-  ctx.fill();
-  ctx.strokeStyle = 'rgba(0,0,0,0.6)';
-  ctx.lineWidth = 0.4;
-  ctx.stroke();
-
-  // tuyères
-  nozzle(ctx, -4.6, 51.5, 4.3);
-  nozzle(ctx, 4.6, 51.5, 4.3);
-
-  // verrière
+  // canons de nez (le canon gagne des tubes visibles)
+  const barrels = L.gun >= 3 ? 2 : L.gun >= 1 ? 1 : 0;
+  for (let i = 0; i < barrels; i++) {
+    for (const sx of [-1, 1]) {
+      if (barrels === 1 && sx < 0) continue;
+      ctx.fillStyle = '#26292e';
+      ctx.fillRect(sx * (6 + i * 2) - 0.6, -40 + i * 4, 1.2, 9);
+    }
+  }
+  // grilles de refroidissement
+  for (let i = 0; i < L.cooling; i++) {
+    for (const sx of [-1, 1]) {
+      ctx.fillStyle = '#1b1e22';
+      ctx.fillRect(sx * 6 - 1.5, 14 + i * 3.2, 3, 1.6);
+      if (L.cooling >= 4) {
+        ctx.fillStyle = 'rgba(255,120,40,0.6)';
+        ctx.fillRect(sx * 6 - 1.2, 14.4 + i * 3.2, 2.4, 0.7);
+      }
+    }
+  }
+  // lignes émettrices du bouclier le long du dos
+  if (L.shield >= 1) {
+    const a = 0.35 + L.shield * 0.12;
+    glowLine(ctx, [[-2.2, -22], [-2.2, 40]], `rgba(95,240,255,${a})`, 0.5);
+    glowLine(ctx, [[2.2, -22], [2.2, 40]], `rgba(95,240,255,${a})`, 0.5);
+  }
+  if (lv.neon) {
+    glowLine(ctx, [[-8.8, -10], [-9.4, 40]], lv.neon, 0.6);
+    glowLine(ctx, [[8.8, -10], [9.4, 40]], lv.neon, 0.6);
+  }
+  // antenne du collecteur
+  if (L.magnet >= 1) {
+    ctx.beginPath();
+    ctx.ellipse(0, -6, 2.4 + L.magnet * 0.5, 1.6, 0, 0, TAU);
+    ctx.fillStyle = '#d8dde3';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+    ctx.lineWidth = 0.3;
+    ctx.stroke();
+  }
+  // dérive(s)
+  const finX = fins === 2 ? [-5.5, 5.5] : [0];
+  for (const fx of finX) {
+    poly(ctx, [
+      [fx - 1.4, 12],
+      [fx + 1.4, 12],
+      [fx + 1.2, 50],
+      [fx - 1.2, 50],
+    ]);
+    ctx.fillStyle = hGrad(ctx, fx - 1.4, fx + 1.4, [
+      [0, shade(base, 0.45)],
+      [1, shade(base, -0.4)],
+    ]);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.6)';
+    ctx.lineWidth = 0.4;
+    ctx.stroke();
+    if (lv.accent) {
+      ctx.fillStyle = lv.accent;
+      ctx.fillRect(fx - 1.2, 42, 2.4, 5);
+    }
+  }
+  // tuyères (plus grosses avec le réacteur)
+  const nr = 4.3 + L.engine * 0.3;
+  for (const nx of [-4.6, 4.6]) {
+    nozzle(ctx, nx, 51.5, nr);
+    if (L.engine >= 3) {
+      const fc = ENGINE_FLAMES[L.engine];
+      ctx.beginPath();
+      ctx.arc(nx, 51.5, nr * 0.55, 0, TAU);
+      ctx.fillStyle = `rgba(${fc[0]},${fc[1]},${fc[2]},0.75)`;
+      ctx.fill();
+    }
+  }
+  // verrière (dorée pour les livrées d'élite)
   canopy(ctx, 0, -32, 4.3, 11);
-
+  if (T === 3) {
+    ctx.beginPath();
+    ctx.ellipse(0, -32, 4.3, 11, 0, 0, TAU);
+    ctx.fillStyle = 'rgba(232,185,35,0.3)';
+    ctx.fill();
+  }
   // numéro
-  ctx.fillStyle = 'rgba(20,24,30,0.7)';
+  ctx.fillStyle = T === 3 || T === 2 ? 'rgba(230,236,245,0.75)' : 'rgba(20,24,30,0.7)';
   ctx.font = 'bold 4px sans-serif';
   ctx.textAlign = 'center';
   ctx.fillText('07', 0, 24);
 }
+
+// Régénère le sprite du joueur selon ses améliorations
+Sprites.applyPlayerLook = function (upgrades) {
+  const L = playerLookFrom(upgrades);
+  const key = JSON.stringify(L, (k, v) => (k === 'livery' ? v.name : v));
+  if (this.playerKey === key) return L;
+  this.playerKey = key;
+  this.make('player', 110, 118, (c) => drawPlayerJet(c, L));
+  PlayerLook.flame = ENGINE_FLAMES[L.engine];
+  PlayerLook.flameSize = 1 + L.engine * 0.12;
+  PlayerLook.look = L;
+  if (typeof BANK_SHADES !== 'undefined') BANK_SHADES = null;
+  return L;
+};
 
 function drawEnemyFighter(ctx, base, accent, variant = 0) {
   // type Su-27 : ailes en flèche, double dérive, empennages séparés
@@ -899,7 +1115,7 @@ function drawHeliBody(ctx, base) {
 }
 
 function makeAircraftSprites() {
-  Sprites.make('player', 100, 118, drawPlayerJet);
+  Sprites.make('player', 110, 118, (c) => drawPlayerJet(c));
   Sprites.make('fighter', 96, 120, (c) => drawEnemyFighter(c, '#6e7562', '#c92a2a'));
   Sprites.make('ace', 96, 120, (c) => drawEnemyFighter(c, '#2f3136', '#e02020', 1));
   Sprites.make('interceptor', 76, 124, drawInterceptor);

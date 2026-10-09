@@ -264,8 +264,8 @@ class Player {
     for (const ex of [-4.6, 4.6]) {
       const x = this.x + ex * sx;
       const y = this.y + 54;
-      const f = (16 + thr * 18) * (0.85 + Math.random() * 0.3);
-      ctx.drawImage(Glow.get(255, 150, 60), x - f, y - f * 0.6, f * 2, f * 2.2);
+      const f = (16 + thr * 18) * PlayerLook.flameSize * (0.85 + Math.random() * 0.3);
+      ctx.drawImage(Glow.get(...PlayerLook.flame), x - f, y - f * 0.6, f * 2, f * 2.2);
       ctx.drawImage(Glow.get(140, 180, 255), x - 6, y - 4, 12, 18 + thr * 16);
     }
     if (G.muzzle > 0) {
