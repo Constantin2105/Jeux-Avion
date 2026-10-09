@@ -44,6 +44,7 @@ class Player {
       this.ammo[o.id] = this.maxAmmo[o.id];
     }
     this.sel = 0;
+    this.alt = 1; // altitude relative (0 = au sol, pendant le décollage)
   }
 
   get selected() {
@@ -109,8 +110,10 @@ class Player {
     let tx = M.x;
     let ty = M.y;
     if (G.state === 'intro') {
+      // décollage scénarisé
       tx = VW / 2;
-      ty = VH * 0.72;
+      ty = G.introY;
+      this.alt = G.introAlt;
     } else if (G.state === 'outro') {
       tx = this.x;
       ty = -400;
@@ -132,8 +135,21 @@ class Player {
       this.x = U.clamp(this.x, 40, VW - 40);
       this.y = U.clamp(this.y, 70, VH - 60);
     }
+    if (G.state === 'intro') {
+      this.x = tx;
+      this.y = ty;
+      this.vx = 0;
+      this.vy = 0;
+    }
     const targetBank = U.clamp(this.vx / 700, -1, 1);
     this.bank += (targetBank - this.bank) * Math.min(1, dt * 6);
+    // tonneau de victoire
+    if (G.state === 'outro') this.bank = Math.sin(G.stateT * 7) * 0.95;
+    // traînées de condensation en bout d'aile lors des virages serrés
+    if (Math.abs(this.bank) > 0.45 && this.alt > 0.9) {
+      const sx = 1 - Math.abs(this.bank) * 0.28;
+      for (const s of [-1, 1]) G.fx.smoke(this.x + s * 46 * sx, this.y + 30, 0, 0, 0.6, 2, 7, 245, { a: 0.35 * Math.abs(this.bank), scroll: 0.9, drag: 0 });
+    }
     SFX.setEngine(U.clamp(len / this.maxSpeed, 0, 1));
 
     // --- timers ---
@@ -231,9 +247,17 @@ class Player {
     if (!this.alive) return;
     const spr = Sprites.list.player;
     const sx = 1 - Math.abs(this.bank) * 0.28;
-    const blink = this.invuln > 0 && Math.floor(this.invuln * 12) % 2 === 0;
-    // ombre au sol
-    Sprites.drawShadow(ctx, spr, this.x + 70, this.y + 95, this.bank * 0.1, 0.82, 0.3, sx);
+    const blink = G.state !== 'intro' && this.invuln > 0 && Math.floor(this.invuln * 12) % 2 === 0;
+    // ombre au sol (se rapproche de l'avion quand il est au sol)
+    const al = this.alt;
+    Sprites.drawShadow(ctx, spr, this.x + 6 + 64 * al, this.y + 6 + 89 * al, this.bank * 0.1, (0.82 + 0.18 * (1 - al)) * (0.85 + 0.15 * al), 0.42 - 0.12 * al, sx);
+    ctx.save();
+    if (al < 1) {
+      const sc = 0.85 + 0.15 * al;
+      ctx.translate(this.x, this.y);
+      ctx.scale(sc, sc);
+      ctx.translate(-this.x, -this.y);
+    }
     // postcombustion
     ctx.globalCompositeOperation = 'lighter';
     const thr = U.clamp(-this.vy / 600, 0, 1);
@@ -289,6 +313,7 @@ class Player {
       ctx.globalCompositeOperation = 'source-over';
     }
     if (this.empT > 0) drawStun(ctx, { x: this.x, y: this.y, r: 55 });
+    ctx.restore();
   }
 
   // feux de navigation (dessinés après l'assombrissement nocturne)

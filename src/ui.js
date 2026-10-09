@@ -39,7 +39,7 @@ const Save = {
 };
 
 // Niveau requis pour chaque palier du canon
-const GUN_REQ = [1, 2, 3, 5, 7, 9, 12, 15];
+const GUN_REQ = [1, 1, 2, 2, 3, 4, 5, 6];
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -103,7 +103,11 @@ const UI = {
   action(a) {
     switch (a) {
       case 'campaign':
-        this.openHangar();
+        if (!this.save.introSeen) this.playIntro();
+        else this.openHangar();
+        break;
+      case 'intro':
+        this.playIntro();
         break;
       case 'controls':
         this.prev = this.current;
@@ -169,8 +173,18 @@ const UI = {
     }
   },
 
+  playIntro() {
+    this.endGame();
+    Cinema.play(introShots(), () => {
+      this.save.introSeen = true;
+      Save.write(this.save);
+      this.openHangar();
+    });
+  },
+
   // --- Partie ---------------------------------------------------------------
   startLevel(n) {
+    if (Cinema.active) Cinema.active = false;
     this.endGame();
     this.selectedLevel = n;
     Input.release();
@@ -214,7 +228,11 @@ const UI = {
     Save.write(s);
     if (r.level === LEVELS.length) {
       $('#victory-stats').innerHTML = this.statsHTML(r) + `<div class="stat big"><span>Score total de campagne</span><b>${U.fmt(s.totalScore)}</b></div>`;
-      this.show('victory');
+      // différé : on est encore dans la mise à jour de la partie
+      setTimeout(() => {
+        this.endGame();
+        Cinema.play(victoryShots(), () => this.show('victory'));
+      }, 0);
       return;
     }
     $('#results-title').textContent = `MISSION ACCOMPLIE`;

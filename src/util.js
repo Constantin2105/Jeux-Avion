@@ -88,6 +88,7 @@ class Noise2D {
     }
     for (let i = 0; i < 512; i++) this.perm[i] = p[i & 255];
   }
+  // Bruit de gradient (Perlin) remappé dans [0, 1]
   value(x, y) {
     const xi = Math.floor(x);
     const yi = Math.floor(y);
@@ -96,25 +97,43 @@ class Noise2D {
     const X = xi & 255;
     const Y = yi & 255;
     const p = this.perm;
-    const v = this.vals;
-    const a = v[p[p[X] + Y]];
-    const b = v[p[p[X + 1] + Y]];
-    const c = v[p[p[X] + Y + 1]];
-    const d = v[p[p[X + 1] + Y + 1]];
-    const u = xf * xf * (3 - 2 * xf);
-    const w = yf * yf * (3 - 2 * yf);
-    return a + (b - a) * u + (c - a) * w + (a - b - c + d) * u * w;
+    const g = (h, dx, dy) => {
+      switch (h & 7) {
+        case 0: return dx + dy;
+        case 1: return dx - dy;
+        case 2: return -dx + dy;
+        case 3: return -dx - dy;
+        case 4: return dx * 1.4142;
+        case 5: return -dx * 1.4142;
+        case 6: return dy * 1.4142;
+        default: return -dy * 1.4142;
+      }
+    };
+    const a = g(p[p[X] + Y], xf, yf);
+    const b = g(p[p[X + 1] + Y], xf - 1, yf);
+    const c = g(p[p[X] + Y + 1], xf, yf - 1);
+    const d = g(p[p[X + 1] + Y + 1], xf - 1, yf - 1);
+    const u = xf * xf * xf * (xf * (xf * 6 - 15) + 10);
+    const w = yf * yf * yf * (yf * (yf * 6 - 15) + 10);
+    const n = a + (b - a) * u + (c - a) * w + (a - b - c + d) * u * w;
+    return U.clamp(0.5 + n * 0.62, 0, 1);
   }
   fbm(x, y, oct = 5) {
     let sum = 0;
     let amp = 0.5;
     let f = 1;
     let norm = 0;
+    let px = x;
+    let py = y;
     for (let i = 0; i < oct; i++) {
-      sum += this.value(x * f, y * f) * amp;
+      sum += this.value(px * f + i * 17.3, py * f) * amp;
       norm += amp;
       amp *= 0.5;
       f *= 2.03;
+      // rotation (~37°) pour casser l'alignement sur la grille
+      const nx = px * 0.8 - py * 0.6;
+      py = px * 0.6 + py * 0.8;
+      px = nx;
     }
     return sum / norm;
   }
@@ -123,12 +142,17 @@ class Noise2D {
     let amp = 0.5;
     let f = 1;
     let norm = 0;
+    let px = x;
+    let py = y;
     for (let i = 0; i < oct; i++) {
-      const n = 1 - Math.abs(this.value(x * f, y * f) * 2 - 1);
+      const n = 1 - Math.abs(this.value(px * f + i * 31.7, py * f) * 2 - 1);
       sum += n * n * amp;
       norm += amp;
       amp *= 0.5;
       f *= 2.1;
+      const nx = px * 0.8 - py * 0.6;
+      py = px * 0.6 + py * 0.8;
+      px = nx;
     }
     return sum / norm;
   }

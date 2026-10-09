@@ -81,6 +81,8 @@ const HUD = {
     // --- réticules ---
     if (P.alive && (G.state === 'play' || G.state === 'boss' || G.state === 'bossWarn')) this.drawTargeting(ctx, G, P);
 
+    // en mode cinématique (bandes noires), l'interface s'efface
+    if (G.bars < 0.5) {
     // --- panneau gauche : coque, bouclier, température ---
     this.panel(ctx, 16, 14, 300, P.maxShield > 0 ? 136 : 102);
     let y = 44;
@@ -211,6 +213,13 @@ const HUD = {
     ctx.fillStyle = '#ffffff';
     ctx.fillText(`${P.gun.name}  (Nv ${P.gunLevel + 1})`, 30, VH - 26);
 
+    }
+
+    // --- bandes cinéma + cartes de titre ---
+    drawBars(ctx, G.bars);
+    if (G.state === 'intro') this.drawMissionCard(ctx, G);
+    if (G.bossIntro > 0 && G.boss) this.drawBossCard(ctx, G);
+
     // --- bannières ---
     for (const b of G.banners) {
       const t = b.t / b.dur;
@@ -249,6 +258,78 @@ const HUD = {
       ctx.lineTo(m.x, m.y + 16);
       ctx.stroke();
     }
+    ctx.restore();
+  },
+
+  drawMissionCard(ctx, G) {
+    const t = G.stateT;
+    const a = U.clamp(t / 0.6, 0, 1) * U.clamp((INTRO_DUR - t) / 0.6, 0, 1);
+    ctx.save();
+    ctx.globalAlpha = a;
+    const x = 90;
+    const y = VH * 0.3;
+    ctx.fillStyle = '#ffb000';
+    ctx.fillRect(x, y - 70, 6, 150);
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+    ctx.font = `700 22px ${FONT}`;
+    ctx.fillStyle = '#ffb000';
+    ctx.fillText(`MISSION ${String(G.lp.n).padStart(2, '0')} / ${LEVELS.length}  ·  ${G.lp.theme.name.toUpperCase()}`, x + 24, y - 40);
+    ctx.font = `900 58px "Orbitron", ${FONT}`;
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    ctx.fillText(G.lp.def.name.toUpperCase(), x + 27, y + 23);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(G.lp.def.name.toUpperCase(), x + 24, y + 20);
+    ctx.font = `600 22px ${FONT}`;
+    ctx.fillStyle = 'rgba(230,240,255,0.92)';
+    const brief = typewriter(G.lp.def.brief, Math.max(0, t - 0.7), 55);
+    // retour à la ligne simple
+    const words = brief.split(' ');
+    let line = '';
+    let ly = y + 62;
+    for (const w of words) {
+      if (ctx.measureText(line + w).width > 640) {
+        ctx.fillText(line, x + 24, ly);
+        line = '';
+        ly += 30;
+      }
+      line += w + ' ';
+    }
+    ctx.fillText(line, x + 24, ly);
+    ctx.restore();
+    // invite à passer
+    ctx.font = `600 16px ${FONT}`;
+    ctx.textAlign = 'right';
+    ctx.fillStyle = 'rgba(255,255,255,0.45)';
+    ctx.fillText('Clic pour passer ▸▸', VW - 24, VH - 34);
+    // statut de la tour
+    ctx.textAlign = 'left';
+    ctx.fillStyle = 'rgba(160,230,255,0.75)';
+    const st = t < 1 ? 'MOTEURS : PLEINE PUISSANCE' : t < 2.2 ? 'ROULAGE · V1 · ROTATION' : t < 3.6 ? 'DÉCOLLAGE · TRAIN RENTRÉ' : 'MONTÉE · CAP MISSION';
+    ctx.fillText(`${G.carrier ? 'CATAPULTE' : 'PISTE 36'}  ·  ${st}`, 24, VH - 34);
+  },
+
+  drawBossCard(ctx, G) {
+    const b = G.boss;
+    const d = BOSSES[b.kind];
+    const total = b.kind.startsWith('mini_') ? 2.6 : 4;
+    const t = total - G.bossIntro;
+    const a = U.clamp(t / 0.4, 0, 1) * U.clamp(G.bossIntro / 0.5, 0, 1);
+    ctx.save();
+    ctx.globalAlpha = a;
+    ctx.textAlign = 'center';
+    ctx.font = `700 18px ${FONT}`;
+    ctx.fillStyle = '#ff5050';
+    ctx.fillText('— CONTACT HOSTILE MAJEUR —', VW / 2, VH - 120);
+    ctx.font = `900 46px "Orbitron", ${FONT}`;
+    const w = 40 + t * 30;
+    ctx.fillStyle = 'rgba(0,0,0,0.55)';
+    ctx.fillText(b.name.toUpperCase(), VW / 2 + 3, VH - 70 + 3);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(b.name.toUpperCase(), VW / 2, VH - 70);
+    ctx.font = `600 18px ${FONT}`;
+    ctx.fillStyle = 'rgba(255,200,200,0.85)';
+    ctx.fillText(d.desc || '', VW / 2, VH - 40 + Math.min(0, w * 0));
     ctx.restore();
   },
 

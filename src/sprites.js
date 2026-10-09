@@ -5,7 +5,7 @@
 // silhouette d'ombre et sa version "épave".
 // ---------------------------------------------------------------------------
 
-const SPR_SCALE = 2;
+const SPR_SCALE = 3;
 
 const Sprites = {
   list: {},

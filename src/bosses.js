@@ -162,6 +162,7 @@ function spawnBoss(kind) {
       break;
   }
   G.boss = b;
+  G.bossIntro = mini ? 2.6 : 4;
   SFX.play('boss');
   return b;
 }

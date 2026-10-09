@@ -30,6 +30,7 @@ Chaque push sur GitHub construit aussi automatiquement l'installateur (onglet **
 ## Contenu
 - 20 missions dans 12 environnements (désert, canyon, côte, océan, jungle, montagnes, arctique, ville, ville de nuit, volcan, base Oméga…)
 - 8 canons évolutifs (Vulcan → plasma) + améliorations (blindage, bouclier, refroidissement, réacteur, soute, collecteur)
-- 8 armes secondaires : Mk-82, AIM-9, sous-munitions, napalm, Hellfire, IEM, thermobarique, ogive « Soleil »
+- 8 armes secondaires, toutes débloquées dès le niveau 7 : Mk-82, AIM-9, sous-munitions, napalm, Hellfire, IEM, thermobarique, ogive « Soleil »
+- Cinématiques : introduction de campagne, décollage (piste ou porte-avions) avant chaque mission, arrivée des boss, ralenti à la mort, fin de jeu avec générique
 - 8 types de missiles ennemis aux impacts différents : roquette, guidé, fragmentation, hypersonique, incendiaire, IEM, essaim, torpille lourde
 - Boss : cuirassé « Kraken », forteresse volante « Albatros », citadelle « Bastion », prototype « Oméga »

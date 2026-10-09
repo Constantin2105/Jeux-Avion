@@ -1,7 +1,7 @@
 {
   "name": "jeux-avion",
   "productName": "Sky Strike",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Sky Strike - jeu de combat aérien en Electron : abattez les missiles, bombardez les cibles au sol, 20 niveaux.",
   "main": "main.js",
   "scripts": {

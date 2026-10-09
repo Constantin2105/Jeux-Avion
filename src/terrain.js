@@ -36,50 +36,51 @@ function hash2(x, y, s) {
 // renvoie [r,g,b, hauteur pour l'ombrage, classe] ; classe 0 = eau, 1 = sol
 const THEME_SAMPLERS = {
   desert(N, x, y) {
-    const h = N.a.fbm(x / 900, y / 900, 5);
-    const m = N.b.fbm(x / 260, y / 260, 3);
-    const dune = Math.sin(x * 0.011 + y * 0.004 + m * 9) * 0.5 + 0.5;
+    const h = N.a.fbm(x / 1400, y / 1400, 5);
+    const m = N.b.fbm(x / 420, y / 420, 3);
+    // crêtes de dunes : profil en dents de scie adouci, orienté par le vent
+    const w = (x * 0.006 + y * 0.0025 + m * 3.2) % 1;
+    const dune = w < 0.7 ? w / 0.7 : (1 - w) / 0.3;
     let c = ramp(
       [
-        [0.25, [178, 138, 88]],
-        [0.45, [212, 178, 120]],
-        [0.6, [228, 198, 142]],
-        [0.72, [200, 156, 100]],
-        [0.85, [150, 108, 70]],
+        [0.25, [186, 146, 96]],
+        [0.45, [214, 180, 124]],
+        [0.6, [230, 200, 146]],
+        [0.75, [206, 164, 108]],
       ],
-      h + (dune - 0.5) * 0.06,
+      h + (m - 0.5) * 0.12,
     );
-    const rock = N.c.ridged(x / 400, y / 400, 3);
-    if (rock > 0.78) c = U.mixColor(c, [120, 90, 64], Math.min(1, (rock - 0.78) * 6));
-    return [c[0], c[1], c[2], h * 0.7 + dune * 0.025 + rock * 0.05, 1];
+    const rock = N.c.ridged(x / 600, y / 600, 3);
+    if (rock > 0.8) c = U.mixColor(c, [128, 96, 68], Math.min(1, (rock - 0.8) * 5));
+    return [c[0], c[1], c[2], h * 0.6 + dune * 0.012 * (0.5 + m) + Math.max(0, rock - 0.8) * 0.2, 1];
   },
   canyon(N, x, y) {
-    const r = N.a.ridged(x / 700, y / 700, 5);
-    const m = N.b.fbm(x / 200, y / 200, 3);
-    const e = 1 - r;
-    if (e < 0.1) {
-      const c = ramp(
-        [
-          [0, [40, 92, 104]],
-          [0.1, [70, 120, 110]],
-        ],
-        e,
-      );
+    // plateaux en terrasses (mesas) entaillés par des gorges
+    const base = N.a.fbm(x / 1300, y / 1300, 5);
+    const r = N.b.ridged(x / 1500, y / 1500, 3);
+    const m = N.c.fbm(x / 180, y / 180, 3);
+    let e = base * 0.75 + (1 - r) * 0.25;
+    const t = e * 6;
+    const fl = Math.floor(t);
+    const fr = t - fl;
+    e = (fl + Math.pow(U.smooth(fr), 3)) / 6; // terrasses
+    if (r > 0.93) {
+      const c = U.mixColor([40, 96, 104], [70, 124, 112], (1 - r) * 10);
       return [c[0], c[1], c[2], 0, 0];
     }
-    const strata = Math.sin(e * 60 + m * 3) * 0.5 + 0.5;
     let c = ramp(
       [
-        [0.1, [120, 70, 44]],
-        [0.3, [164, 86, 52]],
-        [0.5, [196, 116, 70]],
-        [0.75, [214, 150, 96]],
-        [1, [226, 176, 122]],
+        [0.25, [128, 66, 40]],
+        [0.4, [168, 88, 52]],
+        [0.55, [198, 118, 72]],
+        [0.7, [214, 148, 96]],
+        [0.85, [230, 180, 128]],
       ],
       e,
     );
-    c = U.mixColor(c, [150, 80, 50], strata * 0.18);
-    return [c[0], c[1], c[2], e * 1.4, 1];
+    c = U.mixColor(c, [150, 80, 50], (m - 0.5) * 0.4 + 0.1);
+    if (r > 0.86) c = U.mixColor(c, [100, 60, 40], (r - 0.86) * 8);
+    return [c[0], c[1], c[2], e * 1.3, 1];
   },
   coast(N, x, y) {
     const h = N.a.fbm(x / 1000, y / 1000, 6) + (x / VW - 0.5) * 0.25;
@@ -247,8 +248,8 @@ const THEME_SAMPLERS = {
 };
 
 const RELIEF = {
-  desert: 9,
-  canyon: 16,
+  desert: 14,
+  canyon: 14,
   coast: 10,
   ocean: 8,
   jungle: 9,
@@ -577,7 +578,7 @@ const THEME_DECOR = {
     const r = rng();
     const mx = cx + CELL / 2;
     const my = cy + CELL / 2;
-    if (r < 0.12) {
+    if (r < 0.04) {
       // hélipad
       ctx.fillStyle = '#3e4248';
       ctx.beginPath();
@@ -593,7 +594,7 @@ const THEME_DECOR = {
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText('H', mx, my + 2);
-    } else if (r < 0.3) {
+    } else if (r < 0.16) {
       // hangar
       const w = 110;
       const h = 70;
@@ -612,7 +613,7 @@ const THEME_DECOR = {
         ctx.lineTo(mx + i, my + h / 2);
         ctx.stroke();
       }
-    } else if (r < 0.45) {
+    } else if (r < 0.23) {
       // réservoirs
       for (let i = 0; i < 3; i++) {
         const x = cx + 30 + i * 46;
@@ -629,7 +630,7 @@ const THEME_DECOR = {
         ctx.arc(x, y, 19, 0, TAU);
         ctx.fill();
       }
-    } else if (r < 0.62) {
+    } else if (r < 0.32) {
       // conteneurs
       for (let i = 0; i < 6; i++) {
         ctx.fillStyle = U.pick(['#8a3a2a', '#2a5a8a', '#6a7a2a', '#aa7a2a', '#555']);
@@ -639,7 +640,7 @@ const THEME_DECOR = {
         ctx.strokeStyle = 'rgba(0,0,0,0.4)';
         ctx.strokeRect(x, y, 36, 16);
       }
-    } else if (r < 0.7) {
+    } else if (r < 0.4) {
       // marquages de piste
       ctx.fillStyle = '#2f3237';
       ctx.fillRect(cx, cy + 40, CELL, 80);

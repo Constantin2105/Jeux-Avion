@@ -5,6 +5,8 @@
 // ---------------------------------------------------------------------------
 
 let G = null;
+const INTRO_DUR = 5.4;
+const RUNWAY_LEN = 2200;
 
 const PICKUPS = {
   credit: { color: [255, 210, 60], label: '' },
@@ -61,7 +63,22 @@ class Game {
     this.weaponFlash = 0;
     this.muzzle = 0;
     this.player = new Player(save);
-    this.banner(`NIVEAU ${levelN}`, '#ffffff', 3, this.lp.def.name.toUpperCase());
+    // décollage scénarisé : piste (ou porte-avions) sous l'avion
+    this.carrier = this.lp.theme.water > 0.5 || this.lp.themeId === 'coast';
+    this.runway = { y: VH * 0.68 + (this.carrier ? 140 : 160) };
+    this.scroll = 0;
+    this.scrollTarget = 0;
+    this.introY = VH * 0.68;
+    this.introAlt = 0;
+    this.player.alt = 0;
+    this.player.x = VW / 2;
+    this.player.y = this.introY;
+    this.player.invuln = 7;
+    this.bars = 1;
+    this.bossIntro = 0;
+    this.slowT = 0;
+    this.lines = new SpeedLines(22);
+    this.newArms = ORDNANCE.filter((o) => o.unlock === levelN);
     SFX.startEngine();
     SFX.startMusic(levelN);
   }
@@ -384,7 +401,7 @@ class Game {
   onBossKilled(b) {
     const big = !b.kind.startsWith('mini_');
     this.score += big ? 10000 : 3000;
-    this.addCredits(big ? 1500 : 400, b.x, b.y);
+    this.addCredits(big ? 1500 + this.lp.n * 100 : 600 + this.lp.n * 80, b.x, b.y);
     for (let i = 0; i < (big ? 10 : 5); i++) this.pickups.push({ x: b.x + U.rand(-120, 120), y: b.y + U.rand(-80, 80), kind: 'credit', t: 0 });
     this.state = 'clear';
     this.stateT = 0;
@@ -396,7 +413,40 @@ class Game {
     this.eBullets.length = 0;
   }
 
+  skipIntro() {
+    if (this.state !== 'intro' || this.stateT >= INTRO_DUR - 0.3) return;
+    this.stateT = INTRO_DUR - 0.3;
+    this.introAlt = 1;
+    this.introY = VH * 0.62;
+    this.scroll = this.scrollTarget = this.lp.scroll;
+    this.runway = null;
+  }
+
+  // Décollage : roulage, rotation, montée, puis reprise de la vitesse de croisière
+  updateIntro() {
+    const t = this.stateT;
+    const P = this.player;
+    if (t < 1.0) this.scrollTarget = 0;
+    else if (t < 3.4) this.scrollTarget = 1000;
+    else this.scrollTarget = this.lp.scroll;
+    this.introAlt = U.clamp((t - 2.0) / 1.6, 0, 1);
+    this.introY = VH * 0.68 - U.smooth(U.clamp((t - 2.2) / 2.5, 0, 1)) * VH * 0.06;
+    if (t > 0.8 && this.introAlt < 0.9) {
+      // souffle des réacteurs sur la piste
+      this.fx.smoke(P.x + U.rand(-12, 12), P.y + 64, U.rand(-40, 40), 120, 0.9, 8, 34, this.carrier ? 230 : 190, { a: 0.35 * (1 - this.introAlt), layer: 0, scroll: 1 });
+    }
+    if (t >= INTRO_DUR) {
+      this.state = 'play';
+      this.stateT = 0;
+      this.scrollTarget = this.lp.scroll;
+      P.alt = 1;
+      P.invuln = 2;
+      if (this.newArms.length) this.banner(this.lp.n === 1 ? 'ARMEMENT' : 'NOUVELLE ARME', '#7dff8a', 3, this.newArms.map((o) => o.name.toUpperCase()).join(' · '));
+    }
+  }
+
   onPlayerDead() {
+    this.slowT = 1.8;
     this.state = 'dead';
     this.stateT = 0;
     SFX.stopMusic();
@@ -404,6 +454,14 @@ class Game {
 
   // --- Mise à jour ------------------------------------------------------------
   update(dt) {
+    // ralenti cinématique (mort du joueur)
+    if (this.slowT > 0) {
+      this.slowT -= dt;
+      dt *= 0.3;
+    }
+    const wantBars = this.state === 'intro' || this.state === 'outro' || this.state === 'dead' || this.bossIntro > 0;
+    this.bars += ((wantBars ? 1 : 0) - this.bars) * Math.min(1, dt * 4);
+    this.bossIntro = Math.max(0, this.bossIntro - dt);
     this.time += dt;
     this.stateT += dt;
     this.lockWarning = false;
@@ -416,18 +474,20 @@ class Game {
     if (this.comboT <= 0) this.combo = 0;
 
     // défilement
-    this.scroll += (this.scrollTarget - this.scroll) * Math.min(1, dt * 1.5);
+    this.scroll += (this.scrollTarget - this.scroll) * Math.min(1, dt * (this.state === 'intro' ? 1.1 : 1.5));
     this.D += this.scroll * dt;
+    if (this.runway) {
+      this.runway.y += this.scroll * dt;
+      if (this.runway.y - (this.carrier ? 1100 : RUNWAY_LEN) > VH + 200) this.runway = null;
+    }
+    this.lines.update(dt, this.scroll);
     this.terrain.update(this.D);
     this.clouds.update(dt, this.scroll);
 
     // états du niveau
     switch (this.state) {
       case 'intro':
-        if (this.stateT > 2.4) {
-          this.state = 'play';
-          this.stateT = 0;
-        }
+        this.updateIntro();
         break;
       case 'play':
         this.levelTime += dt;
@@ -618,6 +678,10 @@ class Game {
     if (this.fx.shake > 0) ctx.translate(U.rand(-1, 1) * this.fx.shake, U.rand(-1, 1) * this.fx.shake);
     // sol
     this.terrain.draw(ctx);
+    if (this.runway) {
+      if (this.carrier) drawCarrier(ctx, VW / 2, this.runway.y, 1);
+      else drawRunway(ctx, VW / 2, this.runway.y, 230, RUNWAY_LEN, this.night);
+    }
     this.fx.drawDecals(ctx);
     for (const w of this.wrecks) {
       if (!w.spr) continue;
@@ -657,6 +721,7 @@ class Game {
     this.player.drawLights(ctx);
     if (this.night) this.drawNightGlows(ctx);
     this.clouds.draw(ctx);
+    this.lines.draw(ctx, U.clamp(this.scroll / 700, 0.25, 1) * 0.6);
     // textes flottants
     ctx.font = 'bold 18px Rajdhani, sans-serif';
     ctx.textAlign = 'center';
@@ -669,6 +734,7 @@ class Game {
     }
     ctx.globalAlpha = 1;
     ctx.restore();
+    Post.apply(ctx, this.lp.themeId, this.time);
     this.fx.drawScreen(ctx);
     HUD.draw(ctx, this);
   }

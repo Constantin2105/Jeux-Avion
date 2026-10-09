@@ -16,6 +16,12 @@ const Input = {
     canvas.addEventListener('mousedown', (e) => {
       SFX.resume();
       toWorld(e);
+      if (Cinema.active) {
+        Cinema.skip();
+        e.preventDefault();
+        return;
+      }
+      if (G && G.state === 'intro') G.skipIntro();
       if (e.button === 0) this.mouse.left = true;
       if (e.button === 2) this.mouse.right = true;
       e.preventDefault();
@@ -40,7 +46,12 @@ const Input = {
         toggleFullscreen();
         return;
       }
+      if (Cinema.active) {
+        if (e.key === 'Escape' || e.key === ' ' || e.key === 'Enter') Cinema.skip();
+        return;
+      }
       if (!G) return;
+      if (G.state === 'intro' && (e.key === ' ' || e.key === 'Enter')) G.skipIntro();
       if (e.key === 'Escape' || e.key === 'p' || e.key === 'P') {
         if (G.finished || !G.player.alive) return;
         if (G.paused) UI.resume();
@@ -110,6 +121,7 @@ const MenuScene = {
       Sprites.draw(ctx, spr, x + ox, y + oy, 0, 1.15, 1, sx);
     }
     this.clouds.draw(ctx);
+    Post.apply(ctx, 'coast', this.t);
     // assombrissement léger pour la lisibilité du menu
     const g = ctx.createLinearGradient(0, 0, VW, 0);
     g.addColorStop(0, 'rgba(4,8,14,0.85)');
@@ -157,7 +169,10 @@ const MenuScene = {
     ctx.beginPath();
     ctx.rect(0, 0, VW, VH);
     ctx.clip();
-    if (G) {
+    if (Cinema.active) {
+      Cinema.update(dt);
+      if (Cinema.active) Cinema.draw(ctx);
+    } else if (G) {
       if (!G.paused) G.update(dt);
       G.draw(ctx);
     } else {
@@ -165,7 +180,7 @@ const MenuScene = {
       MenuScene.draw(ctx);
     }
     ctx.restore();
-    canvas.style.cursor = G && !G.paused && !G.finished ? 'none' : 'default';
+    canvas.style.cursor = Cinema.active || (G && !G.paused && !G.finished) ? 'none' : 'default';
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
