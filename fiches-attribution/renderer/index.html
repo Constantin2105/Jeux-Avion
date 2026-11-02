@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self'; media-src 'self' blob: mediastream:">
+  <title>Fiches d'attribution de parcelles</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="document.css">
+</head>
+<body>
+  <div id="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">FA</div>
+        <div>
+          <div class="brand-title">Fiches d'attribution</div>
+          <div class="brand-sub">de parcelles</div>
+        </div>
+      </div>
+      <nav>
+        <button class="nav-btn" data-nav="fiches">📄 Fiches enregistrées</button>
+        <button class="nav-btn primary" data-nav="new">＋ Nouvelle fiche</button>
+        <button class="nav-btn" data-nav="templates">🧩 Modèles</button>
+        <button class="nav-btn" data-nav="backup">💾 Sauvegarde</button>
+        <button class="nav-btn" data-nav="help">❔ Aide</button>
+      </nav>
+      <div class="sidebar-foot">Fonctionne sans Internet.<br>Données conservées sur cet ordinateur.</div>
+    </aside>
+    <main id="view"></main>
+  </div>
+
+  <!-- Zone utilisée uniquement pour l'impression et l'export PDF -->
+  <div id="print-root" aria-hidden="true"></div>
+  <div id="modal-root"></div>
+  <div id="toasts"></div>
+
+  <script src="../node_modules/jsqr/dist/jsQR.js"></script>
+  <script src="../src/default-template.js"></script>
+  <script src="../src/document.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

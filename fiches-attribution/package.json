@@ -1,0 +1,60 @@
+{
+  "name": "fiches-attribution",
+  "productName": "Fiches d'attribution",
+  "version": "1.0.0",
+  "description": "Application locale de création et de gestion des fiches d'attribution de parcelles (hors ligne).",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "node tests/run-tests.js",
+    "dist": "electron-builder",
+    "dist:win": "electron-builder --win",
+    "dist:linux": "electron-builder --linux"
+  },
+  "author": "constantin2105",
+  "license": "UNLICENSED",
+  "private": true,
+  "dependencies": {
+    "jsqr": "^1.4.0",
+    "qrcode": "^1.5.4",
+    "sql.js": "^1.15.2"
+  },
+  "devDependencies": {
+    "electron": "^44.10.1",
+    "electron-builder": "^26.18.0"
+  },
+  "build": {
+    "appId": "com.constantin2105.fichesattribution",
+    "productName": "Fiches d'attribution",
+    "files": [
+      "main.js",
+      "preload.js",
+      "src/**/*",
+      "renderer/**/*"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "signAndEditExecutable": false
+    },
+    "linux": {
+      "target": "AppImage"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "Fiches d'attribution",
+      "artifactName": "FichesAttribution-Setup-${version}.exe"
+    },
+    "directories": {
+      "output": "dist"
+    }
+  }
+}

@@ -1,0 +1,65 @@
+/* Mise en page de la fiche au format A4 (écran, PDF et impression). */
+.a4-page {
+  --fs: 12pt;
+  width: 210mm;
+  height: 297mm;
+  box-sizing: border-box;
+  padding: 15mm 18mm 14mm;
+  background: #fff;
+  color: #000;
+  font-family: 'Times New Roman', Times, 'Liberation Serif', serif;
+  font-size: var(--fs);
+  line-height: 1.35;
+  overflow: hidden;
+  position: relative;
+}
+.a4-content { display: flex; flex-direction: column; min-height: 100%; }
+
+.doc-header { display: grid; grid-template-columns: 30mm 1fr 30mm; align-items: start; }
+.doc-header-text { text-align: center; font-weight: bold; font-size: 1em; line-height: 1.45; }
+.doc-header-side { display: flex; justify-content: flex-end; }
+
+.doc-qr { display: flex; flex-direction: column; align-items: center; width: 27mm; }
+.doc-qr img { width: 25mm; height: 25mm; image-rendering: pixelated; }
+.doc-ref { font-size: 7.5pt; font-family: Arial, Helvetica, sans-serif; margin-top: 1mm; text-align: center; white-space: nowrap; }
+.qr-placeholder {
+  width: 25mm; height: 25mm; border: 1px dashed #888; color: #777;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  font-family: Arial, sans-serif; font-size: 8pt; text-align: center; line-height: 1.2;
+}
+.qr-placeholder small { font-size: 6.5pt; }
+
+.doc-title { text-align: center; margin: 1.1em 0 1em; }
+.doc-title span {
+  display: inline-block; font-weight: bold; font-size: 1.15em;
+  border: 1.5px solid #000; padding: 0.3em 1em; letter-spacing: 0.02em;
+}
+
+.doc-text { text-align: justify; margin: 0 0 0.8em; text-indent: 1.5em; }
+
+.doc-section { margin: 0.3em 0 0.8em; }
+.doc-section-title { font-weight: bold; text-decoration: underline; margin-bottom: 0.45em; }
+.doc-line { margin: 0 0 0.4em 1.2em; display: flex; align-items: baseline; gap: 0.3em; }
+.doc-line.indent { margin-left: 3em; }
+.doc-line.multiline { display: block; }
+.doc-label { white-space: nowrap; }
+.doc-value { font-weight: bold; }
+.doc-subtitle { font-weight: normal; text-decoration: underline; }
+.doc-dots { flex: 1; border-bottom: 1.5px dotted #000; min-width: 30mm; transform: translateY(-0.25em); }
+
+.doc-signatures { margin-top: 0.4em; }
+.doc-place { text-align: right; margin: 0.2em 0 0.8em; }
+.sig-cols { display: flex; justify-content: space-between; gap: 6mm; }
+.sig-col { flex: 1; }
+.sig-col:last-child { text-align: center; }
+.sig-title { font-weight: bold; text-decoration: underline; margin-bottom: 0.6em; }
+.sig-col:first-child .sig-title { text-align: left; }
+.sig-signer { margin-bottom: 2.6em; }
+.sig-name { font-weight: bold; }
+.sig-note { font-style: italic; }
+.sig-qr { display: flex; align-items: flex-end; }
+
+.doc-footer-qr { display: flex; margin-top: auto; padding-top: 4mm; }
+.doc-footer-qr.bottom-left { justify-content: flex-start; }
+.doc-footer-qr.bottom-right { justify-content: flex-end; }
+.doc-footer-qr.bottom-center { justify-content: center; }

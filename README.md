@@ -1,5 +1,7 @@
 # Sky Strike ✈
 
+> Ce dépôt contient aussi l'application **Fiches d'attribution de parcelles** : voir [`fiches-attribution/`](fiches-attribution/README.md).
+
 Jeu de combat aérien (vue de dessus) en **Electron** : abattez les missiles et les avions ennemis, bombardez les cibles au sol, 20 niveaux, 4 boss + mini-boss, armement évolutif.
 
 ## Commandes

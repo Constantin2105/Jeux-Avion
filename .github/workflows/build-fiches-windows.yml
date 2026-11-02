@@ -1,0 +1,28 @@
+name: Build Fiches d'attribution (Windows)
+
+on:
+  push:
+    branches: ['**']
+    paths:
+      - 'fiches-attribution/**'
+      - '.github/workflows/build-fiches-windows.yml'
+  workflow_dispatch:
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: fiches-attribution
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install
+      - run: npm test
+      - run: npx electron-builder --win --publish never
+      - uses: actions/upload-artifact@v4
+        with:
+          name: FichesAttribution-Windows-Installer
+          path: fiches-attribution/dist/*.exe
